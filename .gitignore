@@ -1,7 +1,7 @@
 # Environment variables
 .env
 .env.local
-
+app-spec.yaml
 # Python
 __pycache__/
 *.py[cod]
