@@ -262,7 +262,51 @@ def run_phoenix_experiment_manual():
     print("5. Compare variants side-by-side in Phoenix UI")
     print("="*80 + "\n")
 
+    # Optionally upload to Phoenix dataset
+    upload = input("Would you like to upload this to Phoenix as a dataset? (y/n): ").strip().lower()
+    if upload == 'y':
+        upload_to_phoenix_dataset(df, timestamp)
+
     return df, summary_df, results_file, summary_file
+
+
+def upload_to_phoenix_dataset(df: pd.DataFrame, timestamp: str):
+    """
+    Upload experiment results directly to Phoenix as a dataset
+
+    Args:
+        df: DataFrame with experiment results
+        timestamp: Timestamp for dataset naming
+    """
+    try:
+        from phoenix.client import Client
+
+        print("\n📤 Uploading to Phoenix Cloud...")
+
+        # Connect to Phoenix
+        px_client = Client(
+            base_url=config.PHOENIX_COLLECTOR_ENDPOINT,
+            api_key=config.PHOENIX_API_KEY
+        )
+
+        dataset_name = f"medical_experiments_{timestamp}"
+
+        # Create dataset
+        dataset = px_client.datasets.create_dataset(
+            dataframe=df,
+            name=dataset_name,
+            input_keys=["input_text", "test_case_id", "category"],
+            output_keys=["response", "urgency", "confidence", "route"],
+        )
+
+        print(f"✅ Dataset uploaded to Phoenix!")
+        print(f"   Dataset: {dataset_name}")
+        print(f"   Records: {len(df)}")
+        print(f"   View at: {config.PHOENIX_COLLECTOR_ENDPOINT}/datasets")
+
+    except Exception as e:
+        print(f"❌ Error uploading to Phoenix: {str(e)}")
+        print(f"   You can manually upload {dataset_name}.csv from the Phoenix UI")
 
 
 if __name__ == "__main__":

@@ -15,8 +15,8 @@ ARIZE_API_KEY = os.getenv("ARIZE_API_KEY")
 PROJECT_NAME = os.getenv("PROJECT_NAME", "pulsepoint")
 
 # Phoenix Cloud Configuration (for Experiments & Datasets)
-PHOENIX_API_KEY = os.getenv("PHOENIX_API_KEY", ARIZE_API_KEY)  # Can use same Arize API key
-PHOENIX_COLLECTOR_ENDPOINT = os.getenv("PHOENIX_COLLECTOR_ENDPOINT", "https://app.phoenix.arize.com")
+PHOENIX_API_KEY = os.getenv("PHOENIX_API_KEY")  # Can use same Arize API key
+PHOENIX_COLLECTOR_ENDPOINT = os.getenv("PHOENIX_COLLECTOR_ENDPOINT")
 
 # Application Settings
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")

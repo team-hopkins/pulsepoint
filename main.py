@@ -328,6 +328,33 @@ async def consult(request: ConsultationRequest) -> ConsultationResponse:
             print(f"⚠️  Failed to store consultation in MongoDB: {str(e)}")
             # Don't fail the request if MongoDB storage fails
 
+        # Auto-log to Phoenix dataset
+        try:
+            from auto_dataset_logger import get_auto_logger
+            logger = get_auto_logger("pulsepoint")
+            logger.log_consultation_async(
+                input_data={
+                    'text': formatted_text,
+                    'image': request.image,
+                    'patient_id': request.patient_id,
+                    'location': request.location
+                },
+                output_data={
+                    'response': result["response"],
+                    'urgency': result["urgency"],
+                    'confidence': result["confidence"],
+                    'route_taken': result["route_taken"],
+                    'experiment_variants': result.get("experiment_variants", {})
+                },
+                metadata={
+                    'processing_time': processing_time,
+                    'trace_id': trace_id
+                }
+            )
+        except Exception as e:
+            print(f"⚠️  Failed to log to Phoenix dataset: {str(e)}")
+            # Don't fail the request if dataset logging fails
+
         # Build response
         response = ConsultationResponse(
             response=result["response"],
