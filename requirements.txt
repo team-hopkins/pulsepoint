@@ -1,40 +1,38 @@
-# API Framework
-fastapi
-uvicorn[standard]
-pydantic
-python-multipart
+# Core dependencies
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+python-dotenv>=1.0.0
+pydantic>=2.0.0
 
-# LLM Providers
-openai
-anthropic
-google-generativeai
+# LLM & AI
+openai>=1.50.0
+anthropic>=0.40.0
+google-generativeai>=0.8.0
+langchain>=0.3.0
+langchain-openai>=0.2.0
+langchain-anthropic>=0.3.0
+langchain-google-genai>=2.0.0
+langgraph>=0.2.0
 
-# LangChain & LangGraph
-langchain
-langchain-openai
-langchain-anthropic
-langchain-google-genai
-langgraph
+# Phoenix/Arize monitoring
+arize-phoenix[llm]>=12.0.0
+arize-otel>=0.8.0
+openinference-instrumentation-langchain>=0.1.0
+openinference-instrumentation-openai>=0.1.0
+openinference-instrumentation-vertexai>=0.1.0
+opentelemetry-api>=1.20.0
+opentelemetry-sdk>=1.20.0
 
-# Arize Monitoring - Updated to use arize-otel
-arize-otel>=0.7.0
-openinference-instrumentation-langchain>=0.1.56
-openinference-instrumentation-openai>=0.1.41
-arize-phoenix-otel>=0.14.0
+# Database
+motor>=3.5.0
+pymongo>=4.8.0
 
-# MongoDB
-motor
-pymongo
+# Digital Ocean Spaces
+boto3>=1.35.0
 
-# Digital Ocean Spaces (S3-compatible storage)
-boto3
-botocore
+# Data processing
+pandas>=2.2.0
+numpy>=1.26.0
 
-# Embeddings for RAG/Vector Search
-sentence-transformers
-
-# Utilities
-python-dotenv
-pillow
-requests
-nest-asyncio
+# HTTP client
+httpx>=0.27.0

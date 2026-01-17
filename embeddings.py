@@ -1,35 +1,40 @@
 """Embedding generation for medical knowledge base and RAG"""
-from sentence_transformers import SentenceTransformer
 from typing import List
 import numpy as np
+from openai import OpenAI
+import config
 
-# Initialize embedding model (384 dimensions, fast and efficient)
-_embedding_model = None
+# Initialize OpenAI client for embeddings
+_openai_client = None
 
 
-def get_embedding_model():
-    """Lazy load embedding model"""
-    global _embedding_model
-    if _embedding_model is None:
-        print("📥 Loading embedding model: all-MiniLM-L6-v2...")
-        _embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
-        print("✅ Embedding model loaded (384 dimensions)")
-    return _embedding_model
+def get_openai_client():
+    """Lazy load OpenAI client"""
+    global _openai_client
+    if _openai_client is None:
+        _openai_client = OpenAI(api_key=config.OPENAI_API_KEY)
+    return _openai_client
 
 
 def generate_embedding(text: str) -> List[float]:
     """
-    Generate embedding vector for text
+    Generate embedding vector for text using OpenAI's text-embedding-3-small model
+
+    This uses OpenAI's API instead of local sentence-transformers to avoid
+    large PyTorch dependencies in production deployments.
 
     Args:
         text: Input text to embed
 
     Returns:
-        List of floats representing the embedding vector
+        List of floats representing the embedding vector (1536 dimensions)
     """
-    model = get_embedding_model()
-    embedding = model.encode(text, convert_to_numpy=True)
-    return embedding.tolist()
+    client = get_openai_client()
+    response = client.embeddings.create(
+        model="text-embedding-3-small",
+        input=text
+    )
+    return response.data[0].embedding
 
 
 def generate_embeddings_batch(texts: List[str]) -> List[List[float]]:
@@ -40,11 +45,14 @@ def generate_embeddings_batch(texts: List[str]) -> List[List[float]]:
         texts: List of texts to embed
 
     Returns:
-        List of embedding vectors
+        List of embedding vectors (1536 dimensions each)
     """
-    model = get_embedding_model()
-    embeddings = model.encode(texts, convert_to_numpy=True)
-    return [emb.tolist() for emb in embeddings]
+    client = get_openai_client()
+    response = client.embeddings.create(
+        model="text-embedding-3-small",
+        input=texts
+    )
+    return [item.embedding for item in response.data]
 
 
 def calculate_similarity(embedding1: List[float], embedding2: List[float]) -> float:

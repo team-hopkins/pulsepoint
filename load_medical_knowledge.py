@@ -354,7 +354,7 @@ async def load_knowledge():
             knowledge_with_embedding = {
                 **knowledge,
                 "embedding": embedding,
-                "embedding_model": "all-MiniLM-L6-v2",
+                "embedding_model": "text-embedding-3-small (OpenAI)",
                 "embedding_dimensions": len(embedding)
             }
 
@@ -366,7 +366,7 @@ async def load_knowledge():
         print("\n📊 Knowledge base summary:")
         print(f"   - Total documents: {len(MEDICAL_KNOWLEDGE)}")
         print(f"   - Specialties covered: {len(set(k['specialty'] for k in MEDICAL_KNOWLEDGE))}")
-        print(f"   - Embedding model: all-MiniLM-L6-v2 (384 dimensions)")
+        print(f"   - Embedding model: text-embedding-3-small (OpenAI, 1536 dimensions)")
 
     except Exception as e:
         print(f"\n❌ Error loading knowledge base: {str(e)}")

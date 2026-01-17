@@ -1,0 +1,72 @@
+# Digital Ocean App Platform Configuration
+name: pulsepoint-medical-ai
+region: nyc
+
+# Environment variables (set these in DO dashboard for security)
+envs:
+  - key: ENVIRONMENT
+    value: production
+  - key: PROJECT_NAME
+    value: pulsepoint
+  # Add these as encrypted secrets in DO App Platform:
+  # - OPENAI_API_KEY
+  # - ANTHROPIC_API_KEY
+  # - GOOGLE_API_KEY
+  # - ARIZE_API_KEY
+  # - ARIZE_SPACE_KEY
+  # - PHOENIX_API_KEY
+  # - PHOENIX_COLLECTOR_ENDPOINT
+  # - MONGODB_URI
+  # - SPACES_ACCESS_KEY
+  # - SPACES_SECRET_KEY
+
+services:
+  - name: api
+    dockerfile_path: Dockerfile
+    source_dir: /
+    github:
+      repo: your-username/your-repo  # Update this
+      branch: main
+      deploy_on_push: true
+
+    # Health check
+    health_check:
+      http_path: /health
+      initial_delay_seconds: 40
+      period_seconds: 30
+      timeout_seconds: 10
+      success_threshold: 1
+      failure_threshold: 3
+
+    # HTTP port
+    http_port: 8000
+
+    # Instance configuration
+    instance_count: 1
+    instance_size_slug: professional-xs  # $12/month, 1 vCPU, 2GB RAM
+
+    # Routes
+    routes:
+      - path: /
+
+    # CORS configuration
+    cors:
+      allow_origins:
+        - exact: https://yourdomain.com
+      allow_methods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        - OPTIONS
+      allow_headers:
+        - Content-Type
+        - Authorization
+
+# Optional: MongoDB managed database
+# databases:
+#   - name: carepoint-db
+#     engine: MONGODB
+#     version: "6"
+#     production: true
+#     cluster_name: carepoint-cluster

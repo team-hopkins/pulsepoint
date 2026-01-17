@@ -5,13 +5,7 @@ from openinference.instrumentation.openai import OpenAIInstrumentor
 from openinference.instrumentation.vertexai import VertexAIInstrumentor
 import config
 import logging
-from phoenix.otel import register as phoenix_register
 
-tracer_provider = phoenix_register(
-  project_name="pulsepoint",
-  endpoint="https://app.phoenix.arize.com/s/arnabbibhuti4901",
-  auto_instrument=True
-)
 # Suppress transient gRPC/SSL errors from OTEL exporter
 logging.getLogger('opentelemetry.exporter.otlp.proto.grpc.exporter').setLevel(logging.CRITICAL)
 
