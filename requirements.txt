@@ -1,0 +1,40 @@
+# API Framework
+fastapi
+uvicorn[standard]
+pydantic
+python-multipart
+
+# LLM Providers
+openai
+anthropic
+google-generativeai
+
+# LangChain & LangGraph
+langchain
+langchain-openai
+langchain-anthropic
+langchain-google-genai
+langgraph
+
+# Arize Monitoring - Updated to use arize-otel
+arize-otel>=0.7.0
+openinference-instrumentation-langchain>=0.1.56
+openinference-instrumentation-openai>=0.1.41
+arize-phoenix-otel>=0.14.0
+
+# MongoDB
+motor
+pymongo
+
+# Digital Ocean Spaces (S3-compatible storage)
+boto3
+botocore
+
+# Embeddings for RAG/Vector Search
+sentence-transformers
+
+# Utilities
+python-dotenv
+pillow
+requests
+nest-asyncio
