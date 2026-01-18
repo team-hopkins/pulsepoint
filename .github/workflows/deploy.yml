@@ -86,7 +86,7 @@ jobs:
                   APP_ID=$(doctl apps list --format ID,Spec.Name | grep "${{ env.APP_NAME }}" | awk '{print $1}')
 
                   echo "📊 Deployment Status:"
-                  doctl apps get $APP_ID --format ID,DefaultIngress,ActiveDeployment.Phase,UpdatedAt
+                  doctl apps get $APP_ID --format ID,Spec.Name,DefaultIngress,ActiveDeployment.ID,Updated
 
                   echo ""
                   echo "🌐 App URL: https://$(doctl apps get $APP_ID --format DefaultIngress --no-header)"
