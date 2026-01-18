@@ -1,14 +1,16 @@
 """LLM Evaluators for medical AI responses using Phoenix"""
-from phoenix.evals import HallucinationEvaluator, llm_classify, OpenAIModel
+from phoenix.evals import HallucinationEvaluator, llm_classify, AnthropicModel
 import config
 import os
 
-# Set OpenAI API key for Phoenix evaluators
-os.environ["OPENAI_API_KEY"] = config.OPENAI_API_KEY
+# Use Claude for Phoenix evaluators (OpenRouter doesn't support legacy 'functions' API)
+# Claude Sonnet 3.5 is excellent for evaluations and avoids OpenRouter compatibility issues
+os.environ["ANTHROPIC_API_KEY"] = config.ANTHROPIC_API_KEY
 
-# Initialize hallucination detector using GPT-4o for evaluation
+# Initialize hallucination detector using Claude Sonnet 3.5 for evaluation
+# Note: AnthropicModel reads API key from ANTHROPIC_API_KEY environment variable
 hallucination_evaluator = HallucinationEvaluator(
-    model=OpenAIModel(model="gpt-4o")
+    model=AnthropicModel(model="claude-3-5-sonnet-20240620")
 )
 
 def evaluate_hallucination(input_text: str, output_text: str, reference_text: str = None) -> dict:

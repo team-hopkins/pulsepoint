@@ -30,14 +30,20 @@ class MedicalCouncil:
     
     def __init__(self):
         # Initialize models with latest versions
-        self.gpt4 = ChatOpenAI(model="gpt-5.2")
+        # Use OpenRouter for GPT-4o to avoid OpenAI quota limits
+        self.gpt4 = ChatOpenAI(
+            model="openai/gpt-4o",
+            openai_api_key=config.OPENROUTER_API_KEY,
+            openai_api_base="https://openrouter.ai/api/v1",
+            temperature=0.3
+        )
         self.claude = ChatAnthropic(model="claude-opus-4-5-20251101", temperature=0.3)
         self.gemini = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.3)
 
         # Build LangGraph workflow
         self.graph = self._build_graph()
 
-        print("✅ Medical Council initialized with 3 LLM agents")
+        print("✅ Medical Council initialized with 3 LLM agents (GPT-4o via OpenRouter)")
     
     def _build_graph(self) -> StateGraph:
         """Build LangGraph workflow"""

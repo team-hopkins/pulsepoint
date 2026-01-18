@@ -9,16 +9,21 @@ _openai_client = None
 
 
 def get_openai_client():
-    """Lazy load OpenAI client"""
+    """Lazy load OpenAI client (using OpenRouter to avoid quota limits)"""
     global _openai_client
     if _openai_client is None:
-        _openai_client = OpenAI(api_key=config.OPENAI_API_KEY)
+        # Use OpenRouter for embeddings to avoid OpenAI quota limits
+        _openai_client = OpenAI(
+            api_key=config.OPENROUTER_API_KEY,
+            base_url="https://openrouter.ai/api/v1"
+        )
     return _openai_client
 
 
 def generate_embedding(text: str) -> List[float]:
     """
     Generate embedding vector for text using OpenAI's text-embedding-3-small model
+    via OpenRouter to avoid quota limits.
 
     This uses OpenAI's API instead of local sentence-transformers to avoid
     large PyTorch dependencies in production deployments.
@@ -31,7 +36,7 @@ def generate_embedding(text: str) -> List[float]:
     """
     client = get_openai_client()
     response = client.embeddings.create(
-        model="text-embedding-3-small",
+        model="openai/text-embedding-3-small",  # OpenRouter format
         input=text
     )
     return response.data[0].embedding
@@ -40,6 +45,7 @@ def generate_embedding(text: str) -> List[float]:
 def generate_embeddings_batch(texts: List[str]) -> List[List[float]]:
     """
     Generate embeddings for multiple texts (more efficient)
+    via OpenRouter to avoid quota limits.
 
     Args:
         texts: List of texts to embed
@@ -49,7 +55,7 @@ def generate_embeddings_batch(texts: List[str]) -> List[List[float]]:
     """
     client = get_openai_client()
     response = client.embeddings.create(
-        model="text-embedding-3-small",
+        model="openai/text-embedding-3-small",  # OpenRouter format
         input=texts
     )
     return [item.embedding for item in response.data]

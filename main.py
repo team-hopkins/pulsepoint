@@ -89,8 +89,17 @@ async def startup_db_client():
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
-    """Close MongoDB connection on shutdown"""
+    """Close MongoDB connection and flush traces on shutdown"""
     await close_mongodb()
+    
+    # Force flush all pending traces to Arize before shutdown
+    if tracer_provider:
+        try:
+            tracer_provider.force_flush(timeout_millis=5000)
+            print("📤 Flushed pending traces to Arize")
+        except Exception as e:
+            print(f"⚠️  Error flushing traces: {str(e)}")
+    
     print("👋 Application shutdown complete")
 
 
