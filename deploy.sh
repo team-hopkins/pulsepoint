@@ -52,11 +52,51 @@ docker buildx build --platform linux/amd64 -t $FULL_IMAGE_PATH --push .
 echo ""
 echo "✅ Image pushed successfully!"
 echo "   Image: $FULL_IMAGE_PATH"
+
 echo ""
-echo "Next steps:"
-echo "1. Go to https://cloud.digitalocean.com/apps"
-echo "2. Create a new app or update existing one"
-echo "3. Select 'DigitalOcean Container Registry'"
-echo "4. Choose the image: $FULL_IMAGE_PATH"
-echo "5. Add environment variables from .env file"
-echo "6. Deploy!"
+echo "🔍 Getting image digest..."
+sleep 3  # Wait for registry to update
+
+IMAGE_DIGEST=$(doctl registry repository list-tags $IMAGE_NAME --format Tag,Digest | grep "latest" | awk '{print $NF}')
+
+if [ -z "$IMAGE_DIGEST" ] || [ "$IMAGE_DIGEST" == "0" ]; then
+    echo "❌ Could not get image digest. Please check registry."
+    exit 1
+fi
+
+echo "✅ Image digest: $IMAGE_DIGEST"
+
+# Update app-spec.yaml with new digest (replace "tag: latest" with "digest: sha256:...")
+echo "📝 Updating app-spec.yaml with new digest..."
+sed -i.bak "s|tag: latest|digest: $IMAGE_DIGEST|g" app-spec.yaml
+rm -f app-spec.yaml.bak
+echo "✅ app-spec.yaml updated"
+
+echo ""
+echo "🚀 Deploying to Digital Ocean App Platform..."
+
+# Check if app exists
+APP_ID=$(doctl apps list --format ID,Spec.Name | grep "$APP_NAME" | awk '{print $1}')
+
+if [ -z "$APP_ID" ]; then
+    echo "📦 Creating new app: $APP_NAME"
+    doctl apps create --spec app-spec.yaml
+    echo "✅ App created successfully!"
+else
+    echo "🔄 Updating existing app: $APP_NAME (ID: $APP_ID)"
+    doctl apps update $APP_ID --spec app-spec.yaml
+    echo "✅ App updated successfully!"
+fi
+
+echo ""
+echo "🎉 Deployment complete!"
+echo ""
+echo "📊 Check status:"
+echo "   doctl apps list"
+echo "   doctl apps get $APP_NAME"
+echo ""
+echo "📝 View logs:"
+echo "   doctl apps logs $APP_NAME --type=run --follow"
+echo ""
+echo "🌐 View in browser:"
+echo "   https://cloud.digitalocean.com/apps"
