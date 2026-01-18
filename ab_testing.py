@@ -6,7 +6,7 @@ from enum import Enum
 
 class PromptVariant(Enum):
     """Different prompt strategies to test"""
-    CONCISE = "concise"  # Current 30-word limit
+    CONCISE = "concise"  # Current 50-word limit
     DETAILED = "detailed"  # More comprehensive responses
     EMPATHETIC = "empathetic"  # Focus on bedside manner
     CLINICAL = "clinical"  # Technical medical terminology
@@ -78,8 +78,8 @@ def get_prompt_for_variant(variant: str, base_prompt: str) -> str:
     """
     if variant == "detailed":
         return base_prompt.replace(
-            "CRITICAL INSTRUCTION: Respond in EXACTLY 30 words or less.",
-            "Provide a detailed assessment in 60-80 words. Include reasoning and context."
+            "CRITICAL INSTRUCTION: Respond in EXACTLY 50 words or less.",
+            "Provide a detailed assessment in 80-100 words. Include reasoning and context."
         )
 
     elif variant == "empathetic":

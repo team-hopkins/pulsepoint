@@ -22,6 +22,7 @@ class ConsultationState(TypedDict):
     urgency: str
     confidence: float
     experiment_variants: Dict[str, str]  # A/B test variant assignments
+    failed_models: NotRequired[list]  # Models that failed due to quota/rate limits
 
 
 class MedicalCouncil:
@@ -183,7 +184,7 @@ Content: {content}
 
         base_prompt = f"""You are a medical AI assistant. Patient reports: {state['text']}{context_section}
 
-CRITICAL INSTRUCTION: Respond in EXACTLY 30 words or less. This will be converted to speech.
+CRITICAL INSTRUCTION: Respond in EXACTLY 50 words or less. This will be converted to speech.
 
 Provide:
 1. Brief assessment (1 sentence)
@@ -212,7 +213,7 @@ Be direct and actionable."""
 
         prompt = f"""Medical image analysis. Patient says: {state['text']}{context_section}
 
-CRITICAL: Respond in 30 words or less for text-to-speech.
+CRITICAL: Respond in 50 words or less for text-to-speech.
 
 State:
 1. What you see (5 words)
@@ -331,42 +332,54 @@ Be direct."""
             # Text-only message
             messages = [HumanMessage(content=text_prompt)]
 
-        # Parallel consultation with all models for comprehensive analysis
-        gpt4_response = self.gpt4.invoke(messages)
-        print(f"   🧠 GPT-4o Response: {gpt4_response.content[:100]}   ")
-        claude_response = self.claude.invoke(messages)
-        print(f"   🧠 Claude Response: {claude_response.content[:100]}   ")
-        gemini_response = self.gemini.invoke(messages)
-        print(f"   🧠 Gemini Response: {gemini_response.content[:100]}   ")
+        # Parallel consultation with all models - handle failures gracefully
+        responses = {}
+        votes = {}
+        failed_models = []
 
-        state["responses"] = {
-            "gpt4": gpt4_response.content,
-            "claude": claude_response.content,
-            "gemini": gemini_response.content
-        }
+        # GPT-4o
+        try:
+            gpt4_response = self.gpt4.invoke(messages)
+            responses["gpt4"] = gpt4_response.content
+            votes["gpt4"] = {"urgency": "HIGH", "confidence": 0.90, "model": "GPT-4o"}
+            print(f"   🧠 GPT-4o Response: {gpt4_response.content[:100]}   ")
+        except Exception as e:
+            failed_models.append("GPT-4o")
+            print(f"   ⚠️  GPT-4o failed (quota/rate limit): {str(e)[:50]}")
+
+        # Claude
+        try:
+            claude_response = self.claude.invoke(messages)
+            responses["claude"] = claude_response.content
+            votes["claude"] = {"urgency": "HIGH", "confidence": 0.92, "model": "Claude Sonnet 4"}
+            print(f"   🧠 Claude Response: {claude_response.content[:100]}   ")
+        except Exception as e:
+            failed_models.append("Claude")
+            print(f"   ⚠️  Claude failed (quota/rate limit): {str(e)[:50]}")
+
+        # Gemini
+        try:
+            gemini_response = self.gemini.invoke(messages)
+            responses["gemini"] = gemini_response.content
+            votes["gemini"] = {"urgency": "HIGH", "confidence": 0.88, "model": "Gemini 2.0 Flash"}
+            print(f"   🧠 Gemini Response: {gemini_response.content[:100]}   ")
+        except Exception as e:
+            failed_models.append("Gemini")
+            print(f"   ⚠️  Gemini failed (quota/rate limit): {str(e)[:50]}")
+
+        # Check if we have at least one successful response
+        if not responses:
+            raise Exception("All LLM models failed. Cannot provide consultation.")
+
+        # Log warning if some models failed
+        if failed_models:
+            print(f"   ⚠️  Continuing with {len(responses)} model(s), {len(failed_models)} failed: {', '.join(failed_models)}")
+
+        state["responses"] = responses
+        state["votes"] = votes
+        state["failed_models"] = failed_models
 
         print("   💬 Quick consensus check...")
-
-        # Skip detailed debate for speed - just collect votes
-        # Models already provided their assessments above
-
-        state["votes"] = {
-            "gpt4": {
-                "urgency": "HIGH",
-                "confidence": 0.90,
-                "model": "GPT-4o"
-            },
-            "claude": {
-                "urgency": "HIGH",
-                "confidence": 0.92,
-                "model": "Claude Sonnet 4"
-            },
-            "gemini": {
-                "urgency": "HIGH",
-                "confidence": 0.88,
-                "model": "Gemini 2.0 Flash"
-            }
-        }
 
         return state
     
@@ -378,14 +391,21 @@ Be direct."""
         print("   🔬 Synthesizing final response...")
 
         # Build concise synthesis prompt for TTS
+        # Only include responses from models that succeeded
+        expert_opinions = []
+        if responses.get('gpt4'):
+            expert_opinions.append(f"GPT-4o: {responses['gpt4'][:50]}")
+        if responses.get('claude'):
+            expert_opinions.append(f"Claude: {responses['claude'][:50]}")
+        if responses.get('gemini'):
+            expert_opinions.append(f"Gemini: {responses['gemini'][:50]}")
+
         base_synthesis_prompt = f"""Patient: {state['text']}
 
 Expert opinions:
-{responses.get('gpt4', '')[:50]}
-{responses.get('claude', '')[:50]}
-{responses.get('gemini', '')[:50]}
+{chr(10).join(expert_opinions)}
 
-CRITICAL: Respond in EXACTLY 30 words or less for text-to-speech.
+CRITICAL: Respond in EXACTLY 50 words or less for text-to-speech.
 
 Provide: Assessment, urgency level, and one clear action.
 Be direct and calming."""
@@ -394,7 +414,28 @@ Be direct and calming."""
         variant = state.get("experiment_variants", {}).get("prompt_style", "control")
         synthesis_prompt = get_prompt_for_variant(variant, base_synthesis_prompt)
 
-        final = self.gpt4.invoke([HumanMessage(content=synthesis_prompt)])
+        # Try synthesis with available models (fallback if GPT-4 fails)
+        final_content = None
+        synthesis_models = [
+            ("GPT-4o", self.gpt4),
+            ("Claude", self.claude),
+            ("Gemini", self.gemini)
+        ]
+
+        for model_name, model in synthesis_models:
+            try:
+                final = model.invoke([HumanMessage(content=synthesis_prompt)])
+                final_content = final.content
+                print(f"   ✅ Synthesis by {model_name}")
+                break
+            except Exception as e:
+                print(f"   ⚠️  {model_name} synthesis failed: {str(e)[:50]}")
+                continue
+
+        # If all synthesis attempts failed, use the best available response
+        if not final_content:
+            print("   ⚠️  All synthesis models failed, using best available response")
+            final_content = list(responses.values())[0] if responses else "Unable to provide assessment. Please consult a healthcare provider."
 
         # Calculate aggregate confidence score
         confidences = [v.get("confidence", 0.5) for v in votes.values()]
@@ -403,9 +444,9 @@ Be direct and calming."""
         # Determine final urgency (take highest for patient safety)
         urgency_levels = {"LOW": 1, "MEDIUM": 2, "HIGH": 3, "EMERGENCY": 4}
         urgencies = [v.get("urgency", "MEDIUM") for v in votes.values()]
-        max_urgency = max(urgencies, key=lambda x: urgency_levels.get(x, 2))
+        max_urgency = max(urgencies, key=lambda x: urgency_levels.get(x, 2)) if urgencies else "MEDIUM"
 
-        state["final_response"] = final.content
+        state["final_response"] = final_content
         state["urgency"] = max_urgency
         state["confidence"] = round(avg_confidence, 3)
 

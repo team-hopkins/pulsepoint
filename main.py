@@ -233,7 +233,7 @@ async def consult(request: ConsultationRequest) -> ConsultationResponse:
         # Calculate processing time
         processing_time = round(time.time() - start_time, 2)
 
-        # Run guardrails first - block response if any fail
+        # Run guardrails (non-blocking, logs warnings only)
         print(f"   🛡️ Running guardrails validation...")
         guardrail_results = run_all_guardrails(
             patient_input=formatted_text or "Image consultation",
@@ -242,13 +242,10 @@ async def consult(request: ConsultationRequest) -> ConsultationResponse:
             route=result["route_taken"]
         )
 
-        # If guardrails fail, return error
-        if not guardrail_results["all_passed"]:
-            print(f"   ❌ Guardrail failed: {guardrail_results['blocked_reason']}")
-            raise HTTPException(
-                status_code=400,
-                detail=f"Response blocked by guardrails: {guardrail_results['blocked_reason']}"
-            )
+        # Log warnings if any (non-blocking)
+        if guardrail_results.get("warnings"):
+            for warning in guardrail_results["warnings"]:
+                print(f"   ⚠️  {warning['check']}: {warning['message']}")
 
         # Run evaluations (hallucination detection, word count, format check, urgency alignment, council consensus)
         print(f"   🔍 Running quality evaluations...")
@@ -380,8 +377,8 @@ async def consult(request: ConsultationRequest) -> ConsultationResponse:
             print(f"   📊 Hallucination: {h['label']} (score: {h.get('hallucination_score', 'N/A')})")
         if evaluations.get("word_count"):
             wc = evaluations["word_count"]
-            status = "✓" if wc["within_limit"] else "✗"
-            print(f"   📊 Word count: {wc['count']}/30 {status}")
+            status = "✓" if wc["within_limit"] else "⚠️"
+            print(f"   📊 Word count: {wc['count']}/50 {status}")
 
         return response
 

@@ -162,12 +162,12 @@ def evaluate_response_quality(patient_input: str, ai_response: str, urgency: str
     hallucination_result = evaluate_hallucination(patient_input, ai_response)
     evaluations["hallucination"] = hallucination_result
 
-    # 2. Word count check (should be ≤30 for TTS)
+    # 2. Word count check (should be ≤50 for TTS)
     word_count = len(ai_response.split())
     evaluations["word_count"] = {
         "count": word_count,
-        "within_limit": word_count <= 30,
-        "limit": 30
+        "within_limit": word_count <= 50,
+        "limit": 50
     }
 
     # 3. Format validation (contains urgency level)
@@ -275,15 +275,22 @@ def log_evaluation_to_span(evaluations: dict, tracer_provider=None):
 
             eval_span.set_attribute("eval.council_used", bool(evaluations.get("council_used", False)))
 
-            # 5. Guardrail results
+            # 5. Guardrail results (non-blocking, logs warnings)
             if "guardrails" in evaluations:
                 gr = evaluations["guardrails"]
                 eval_span.set_attribute("eval.guardrails.all_passed", bool(gr.get("all_passed")))
+                eval_span.set_attribute("eval.guardrails.warning_count", len(gr.get("warnings", [])))
 
                 # Log individual guardrail checks
                 for idx, check in enumerate(gr.get("checks", [])):
+                    eval_span.set_attribute(f"eval.guardrails.{idx}.name", str(check.get("name", f"check_{idx}")))
                     eval_span.set_attribute(f"eval.guardrails.{idx}.passed", bool(check.get("passed")))
                     eval_span.set_attribute(f"eval.guardrails.{idx}.message", str(check.get("message")))
+
+                # Log warnings separately for easy filtering
+                for idx, warning in enumerate(gr.get("warnings", [])):
+                    eval_span.set_attribute(f"eval.guardrails.warning.{idx}.check", str(warning.get("check")))
+                    eval_span.set_attribute(f"eval.guardrails.warning.{idx}.message", str(warning.get("message")))
 
             # 6. A/B test experiment variants
             if "experiments" in evaluations:
