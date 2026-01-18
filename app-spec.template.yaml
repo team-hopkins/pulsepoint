@@ -1,0 +1,101 @@
+name: pulsepoint-medical-ai
+region: nyc3
+
+services:
+  - name: api
+    # Use image from Digital Ocean Container Registry
+    image:
+      registry_type: DOCR
+      repository: pulsepoint-registry/pulsepoint-api
+      tag: latest # Will be replaced with digest during deployment
+
+    # Environment variables (use GitHub Secrets in production)
+    envs:
+      - key: OPENAI_API_KEY
+        value: YOUR_OPENAI_API_KEY
+        scope: RUN_TIME
+        type: SECRET
+
+      - key: ANTHROPIC_API_KEY
+        value: YOUR_ANTHROPIC_API_KEY
+        scope: RUN_TIME
+        type: SECRET
+
+      - key: GOOGLE_API_KEY
+        value: YOUR_GOOGLE_API_KEY
+        scope: RUN_TIME
+        type: SECRET
+
+      - key: ARIZE_API_KEY
+        value: YOUR_ARIZE_API_KEY
+        scope: RUN_TIME
+        type: SECRET
+
+      - key: ARIZE_SPACE_KEY
+        value: YOUR_ARIZE_SPACE_KEY
+        scope: RUN_TIME
+        type: SECRET
+
+      - key: PHOENIX_API_KEY
+        value: YOUR_PHOENIX_API_KEY
+        scope: RUN_TIME
+        type: SECRET
+
+      - key: PHOENIX_COLLECTOR_ENDPOINT
+        value: https://app.phoenix.arize.com/s/YOUR_ENDPOINT
+        scope: RUN_TIME
+
+      - key: MONGODB_URI
+        value: YOUR_MONGODB_URI
+        scope: RUN_TIME
+        type: SECRET
+
+      - key: MONGODB_DB_NAME
+        value: carepoint_medical
+        scope: RUN_TIME
+
+      - key: SPACES_ACCESS_KEY
+        value: YOUR_SPACES_ACCESS_KEY
+        scope: RUN_TIME
+        type: SECRET
+
+      - key: SPACES_SECRET_KEY
+        value: YOUR_SPACES_SECRET_KEY
+        scope: RUN_TIME
+        type: SECRET
+
+      - key: SPACES_REGION
+        value: sfo3
+        scope: RUN_TIME
+
+      - key: SPACES_BUCKET
+        value: testaid
+        scope: RUN_TIME
+
+      - key: PROJECT_NAME
+        value: pulsepoint
+        scope: RUN_TIME
+
+      - key: ENVIRONMENT
+        value: production
+        scope: RUN_TIME
+
+    # Health check
+    health_check:
+      http_path: /health
+      initial_delay_seconds: 40
+      period_seconds: 30
+      timeout_seconds: 10
+      success_threshold: 1
+      failure_threshold: 3
+
+    # HTTP configuration
+    http_port: 8000
+
+    # Instance size
+    instance_count: 1
+    instance_size_slug: professional-xs # $12/month, 1 vCPU, 2GB RAM
+
+    # Auto-deploy
+    routes:
+      - path: /
