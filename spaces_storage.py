@@ -146,7 +146,7 @@ class SpacesStorage:
                 Key=object_key,
                 Body=image_bytes,
                 ContentType=content_type,
-                ACL='private',  # Keep images private
+                ACL='public-read',  # Make images publicly accessible via CDN
                 Metadata=metadata
             )
             
