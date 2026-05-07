@@ -1,5 +1,6 @@
-# CarePoint AI System - Build Instructions
 
+# CarePoint AI System - Build Instructions
+<img width="1139" height="541" alt="Screenshot 2026-05-06 at 20 11 20" src="https://github.com/user-attachments/assets/0e419b66-8ad6-48e7-8a0b-06c5fd32db17" />
 ## System Overview
 
 FastAPI endpoint receives text/image → LLM Council debates → Returns text response → Dashboards visualize
